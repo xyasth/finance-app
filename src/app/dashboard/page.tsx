@@ -1,96 +1,33 @@
 // app/dashboard/page.tsx
-"use client"
-
-import { useSession } from "next-auth/react"
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { getServerSession } from "next-auth"
+import { redirect } from "next/navigation"
+import { authOptions } from "@/lib/auth" // adjust path to your auth.ts
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plus, TrendingUp, TrendingDown, DollarSign, Settings, LogOut } from "lucide-react"
-import { signOut } from "next-auth/react"
 import Link from "next/link"
+import { signOut } from "next-auth/react"
+import { getDashboardData } from "@/lib/dashboard"
 
-interface Transaction {
-  id: string
-  type: "INCOME" | "EXPENSE"
-  amount: number
-  description: string
-  category: string
-  date: string
-}
-
-interface DashboardData {
-  totalIncome: number
-  totalExpenses: number
-  balance: number
-  recentTransactions: Transaction[]
-  currency: string
-}
-
-export default function DashboardPage() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-  const [data, setData] = useState<DashboardData>({
-    totalIncome: 0,
-    totalExpenses: 0,
-    balance: 0,
-    recentTransactions: [],
-    currency: "USD"
-  })
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login")
-    }
-  }, [status, router])
-
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const response = await fetch("/api/dashboard")
-        if (response.ok) {
-          const dashboardData = await response.json()
-          setData(dashboardData)
-        }
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    if (session) {
-      fetchDashboardData()
-    }
-  }, [session])
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: data.currency,
-    }).format(amount)
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString()
-  }
-
-  if (status === "loading" || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
-      </div>
-    )
-  }
+export default async function DashboardPage() {
+  const session = await getServerSession(authOptions)
 
   if (!session) {
-    return null
+    redirect("/login")
   }
+
+  const data = await getDashboardData(session.user.id)
+
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: data.currency,
+    }).format(amount)
+
+  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString()
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
@@ -105,14 +42,12 @@ export default function DashboardPage() {
                   Settings
                 </Button>
               </Link>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => signOut({ callbackUrl: "/login" })}
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign out
-              </Button>
+              <form action={async () => { "use server"; await signOut({ callbackUrl: "/login" }) }}>
+                <Button variant="ghost" size="sm">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign out
+                </Button>
+              </form>
             </div>
           </div>
         </div>
@@ -151,7 +86,11 @@ export default function DashboardPage() {
               <DollarSign className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${data.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <div
+                className={`text-2xl font-bold ${
+                  data.balance >= 0 ? "text-green-600" : "text-red-600"
+                }`}
+              >
                 {formatCurrency(data.balance)}
               </div>
             </CardContent>
@@ -173,9 +112,7 @@ export default function DashboardPage() {
             </Button>
           </Link>
           <Link href="/transactions">
-            <Button variant="outline">
-              View All Transactions
-            </Button>
+            <Button variant="outline">View All Transactions</Button>
           </Link>
         </div>
 
@@ -202,9 +139,13 @@ export default function DashboardPage() {
                         {transaction.category} • {formatDate(transaction.date)}
                       </p>
                     </div>
-                    <div className={`font-semibold ${
-                      transaction.type === "INCOME" ? "text-green-600" : "text-red-600"
-                    }`}>
+                    <div
+                      className={`font-semibold ${
+                        transaction.type === "INCOME"
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
                       {transaction.type === "INCOME" ? "+" : "-"}
                       {formatCurrency(transaction.amount)}
                     </div>
