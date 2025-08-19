@@ -84,10 +84,9 @@ export default function LoginPage() {
     }
   }
 
-  const handleWorkOSSignIn = () => {
+  const handleGoogleSignIn = () => {
     setIsLoading(true)
-    // Let NextAuth handle redirect here
-    signIn("workos", { callbackUrl: "/dashboard" })
+    signIn("google", { callbackUrl: "/dashboard" })
   }
 
   const fillTestCredentials = () => {
@@ -107,7 +106,7 @@ export default function LoginPage() {
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="credentials">Login</TabsTrigger>
                 <TabsTrigger value="register">Register</TabsTrigger>
-                <TabsTrigger value="sso">WorkOS SSO</TabsTrigger>
+                <TabsTrigger value="google">Google</TabsTrigger>
               </TabsList>
 
               {/* Login */}
@@ -191,10 +190,10 @@ export default function LoginPage() {
                 </form>
               </TabsContent>
 
-              {/* SSO */}
-              <TabsContent value="sso" className="mt-6 text-center">
-                <Button onClick={handleWorkOSSignIn} disabled={isLoading} className="w-full">
-                  {isLoading ? <Loader2 className="animate-spin" /> : "Sign in with WorkOS"}
+              {/* Google SSO */}
+              <TabsContent value="google" className="mt-6 text-center">
+                <Button onClick={handleGoogleSignIn} disabled={isLoading} className="w-full">
+                  {isLoading ? <Loader2 className="animate-spin" /> : "Sign in with Google"}
                 </Button>
               </TabsContent>
             </Tabs>

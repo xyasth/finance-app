@@ -3,34 +3,17 @@ import { getServerSession } from "next-auth/next"
 import { NextAuthOptions } from "next-auth"
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import CredentialsProvider from "next-auth/providers/credentials"
+import GoogleProvider from "next-auth/providers/google"
 import { prisma } from "./prisma"
 import bcrypt from "bcryptjs"
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
-    {
-      id: "workos",
-      name: "WorkOS",
-      type: "oauth",
-      wellKnown: `${process.env.WORKOS_API_URL}/sso/oidc/generic/.well-known/openid_configuration`,
-      authorization: {
-        params: {
-          scope: "openid profile email",
-          connection: process.env.WORKOS_CONNECTION_ID,
-        },
-      },
-      clientId: process.env.WORKOS_CLIENT_ID!,
-      clientSecret: process.env.WORKOS_CLIENT_SECRET!,
-      profile(profile) {
-        return {
-          id: profile.sub,
-          name: profile.name,
-          email: profile.email,
-          image: profile.picture,
-        }
-      },
-    },
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -76,6 +59,12 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
       }
       return session;
+    },
+    async redirect({ url, baseUrl }) {
+      // Always redirect to dashboard after successful sign-in
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      if (new URL(url).origin === baseUrl) return url;
+      return `${baseUrl}/dashboard`;
     }
   },
   session: {
