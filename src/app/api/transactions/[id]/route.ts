@@ -1,25 +1,26 @@
-
-// app/api/transactions/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server"
 import { getAuthSession } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
 export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getAuthSession()
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // Await the params Promise
+    const { id } = await params
+
     const transaction = await prisma.transaction.findFirst({
       where: {
-        id: params.id,
-        userId: session.user.id
-      }
+        id,
+        userId: session.user.id,
+      },
     })
 
     if (!transaction) {
@@ -30,11 +31,10 @@ export async function DELETE(
     }
 
     await prisma.transaction.delete({
-      where: { id: params.id }
+      where: { id },
     })
 
-    return NextResponse.json({ message: "Transaction deleted successfully" })
-
+    return NextResponse.json({ message: `Deleted transaction ${id}` })
   } catch (error) {
     console.error("Delete transaction error:", error)
     return NextResponse.json(

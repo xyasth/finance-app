@@ -97,7 +97,6 @@ export default async function DashboardPage() {
           </Card>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex gap-4 mb-8">
           <Link href="/transactions/add?type=income">
             <Button className="bg-green-600 hover:bg-green-700">
@@ -116,7 +115,6 @@ export default async function DashboardPage() {
           </Link>
         </div>
 
-        {/* Recent Transactions */}
         <Card>
           <CardHeader>
             <CardTitle>Recent Transactions</CardTitle>
